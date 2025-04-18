@@ -145,7 +145,7 @@ def process_ups(df):
 # ===== FedEx Upload =====
 with tab1:
     st.header("📨 Upload FedEx File (CSV or XLSX)")
-    fedex_file = st.file_uploader("FedEx File", type=None, key="fedex")
+    fedex_file = st.file_uploader("FedEx File", type=["csv", "xlsx"], key="fedex")
     fedex_df = load_uploaded_file(fedex_file)
     if fedex_df is not None:
         process_fedex(fedex_df)
@@ -154,7 +154,7 @@ with tab1:
 # ===== UPS Upload =====
 with tab2:
     st.header("📦 Upload UPS File (CSV or XLSX)")
-    ups_file = st.file_uploader("UPS File", type=None, key="ups")
+    ups_file = st.file_uploader("UPS File", type=["csv", "xlsx"], key="ups")
     ups_df = load_uploaded_file(ups_file)
     if ups_df is not None:
         process_ups(ups_df)
