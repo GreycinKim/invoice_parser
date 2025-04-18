@@ -1,9 +1,35 @@
 import streamlit as st
 import pandas as pd
 
-st.title("📦 FedEx & UPS Charge Extractor (CSV/XLSX)")
+st.title("📦 FedEx & UPS Charge Extractor (File Upload)")
 
 tab1, tab2 = st.tabs(["FedEx Upload", "UPS Upload"])
+
+
+# ====== Universal File Loader ======
+def load_uploaded_file(uploaded_file):
+    if uploaded_file is None:
+        return None
+
+    filename = uploaded_file.name.lower()
+
+    try:
+        if filename.endswith(".csv"):
+            try:
+                return pd.read_csv(uploaded_file, encoding="utf-8")
+            except UnicodeDecodeError:
+                return pd.read_csv(uploaded_file, encoding="ISO-8859-1")
+
+        elif filename.endswith(".xlsx"):
+            return pd.read_excel(uploaded_file, engine="openpyxl")
+
+        else:
+            st.error("❌ Unsupported file type. Please upload a .csv or .xlsx file.")
+            return None
+
+    except Exception as e:
+        st.error(f"❌ Error reading file: {e}")
+        return None
 
 
 # ===== FedEx Parser =====
@@ -97,8 +123,7 @@ def process_ups(df):
             total = pd.to_numeric(charge_df[amount_col], errors="coerce").sum()
             st.markdown(f"- **{charge}**: {count} times, **${total:.2f}** total")
 
-        # === Pivot Table View ===
-        st.markdown("### 📊 Normalized View (One Row Per Shipment)")
+        st.markdown("### 📊 (One Row Per Shipment)")
 
         pivot_df = filtered_df.pivot_table(
             index=["Lead Shipment Number", "Shipment Reference Number 1"],
@@ -117,45 +142,19 @@ def process_ups(df):
         st.dataframe(pivot_df)
 
 
-# ===== FedEx Upload Tab =====
+# ===== FedEx Upload =====
 with tab1:
-    st.header("📨 Upload FedEx CSV or XLSX")
-    fedex_file = st.file_uploader("Upload FedEx File", type=["csv", "xlsx"], key="fedex")
-
-    if fedex_file:
-        try:
-            if fedex_file.name.endswith(".csv"):
-                fedex_df = pd.read_csv(fedex_file)
-            elif fedex_file.name.endswith(".xlsx"):
-                fedex_df = pd.read_excel(fedex_file, engine="openpyxl")
-            else:
-                st.error("Unsupported file type.")
-                fedex_df = None
-        except Exception as e:
-            st.error(f"Error reading file: {e}")
-            fedex_df = None
-
-        if fedex_df is not None:
-            process_fedex(fedex_df)
+    st.header("📨 Upload FedEx File (CSV or XLSX)")
+    fedex_file = st.file_uploader("FedEx File", type=None, key="fedex")
+    fedex_df = load_uploaded_file(fedex_file)
+    if fedex_df is not None:
+        process_fedex(fedex_df)
 
 
-# ===== UPS Upload Tab =====
+# ===== UPS Upload =====
 with tab2:
-    st.header("📦 Upload UPS CSV or XLSX")
-    ups_file = st.file_uploader("Upload UPS File", type=["csv", "xlsx"], key="ups")
-
-    if ups_file:
-        try:
-            if ups_file.name.endswith(".csv"):
-                ups_df = pd.read_csv(ups_file)
-            elif ups_file.name.endswith(".xlsx"):
-                ups_df = pd.read_excel(ups_file, engine="openpyxl")
-            else:
-                st.error("Unsupported file type.")
-                ups_df = None
-        except Exception as e:
-            st.error(f"Error reading file: {e}")
-            ups_df = None
-
-        if ups_df is not None:
-            process_ups(ups_df)
+    st.header("📦 Upload UPS File (CSV or XLSX)")
+    ups_file = st.file_uploader("UPS File", type=None, key="ups")
+    ups_df = load_uploaded_file(ups_file)
+    if ups_df is not None:
+        process_ups(ups_df)
