@@ -1,14 +1,13 @@
 import streamlit as st
 import pandas as pd
 
-st.title("📦 FedEx & UPS Charge Extractor (PL-DZ + Grouped View)")
+st.title("📦 FedEx & UPS Charge Extractor (CSV/XLSX / Grouped View)")
 
-tab1, tab2 = st.tabs(["FedEx CSV", "UPS CSV"])
+tab1, tab2 = st.tabs(["FedEx Upload", "UPS Upload"])
 
 
 # ===== FedEx Parser =====
-def process_fedex(uploaded_file, tracking_col_name="Express or Ground Tracking ID"):
-    df = pd.read_csv(uploaded_file)
+def process_fedex(df, tracking_col_name="Express or Ground Tracking ID"):
     st.success("✅ FedEx file uploaded successfully!")
 
     charge_description_cols = [col for col in df.columns if "Tracking ID Charge Description" in col]
@@ -61,8 +60,7 @@ def process_fedex(uploaded_file, tracking_col_name="Express or Ground Tracking I
 
 
 # ===== UPS Parser =====
-def process_ups(uploaded_file):
-    df = pd.read_csv(uploaded_file)
+def process_ups(df):
     st.success("✅ UPS file uploaded successfully!")
 
     df.columns = df.columns.str.strip()
@@ -99,7 +97,7 @@ def process_ups(uploaded_file):
             total = pd.to_numeric(charge_df[amount_col], errors="coerce").sum()
             st.markdown(f"- **{charge}**: {count} times, **${total:.2f}** total")
 
-        # === Normalized Pivot Table View ===
+        # === Pivot Table View ===
         st.markdown("### 📊 Normalized View (One Row Per Shipment)")
 
         pivot_df = filtered_df.pivot_table(
@@ -112,27 +110,52 @@ def process_ups(uploaded_file):
         pivot_df.columns.name = None
         pivot_df.columns = [str(col) for col in pivot_df.columns]
 
-        # Add Total column (fixed)
+        # Add total column
         numeric_cols = pivot_df.columns.difference(["Lead Shipment Number", "Shipment Reference Number 1"])
         pivot_df["Total"] = pivot_df[numeric_cols].apply(pd.to_numeric, errors="coerce").sum(axis=1)
-
-        # Optional: sort by Total descending
-        pivot_df = pivot_df.sort_values(by="Total", ascending=False)
 
         st.dataframe(pivot_df)
 
 
-# ========== Tabs ==========
-
+# ===== FedEx Upload Tab =====
 with tab1:
-    st.header("📨 FedEx Invoice Upload")
-    fedex_file = st.file_uploader("Upload FedEx CSV", type="csv", key="fedex")
-    if fedex_file:
-        process_fedex(fedex_file)
+    st.header("📨 Upload FedEx CSV or XLSX")
+    fedex_file = st.file_uploader("Upload FedEx File", type=["csv", "xlsx"], key="fedex")
 
+    if fedex_file:
+        try:
+            if fedex_file.name.endswith(".csv"):
+                fedex_df = pd.read_csv(fedex_file)
+            elif fedex_file.name.endswith(".xlsx"):
+                fedex_df = pd.read_excel(fedex_file, engine="openpyxl")
+            else:
+                st.error("Unsupported file type.")
+                fedex_df = None
+        except Exception as e:
+            st.error(f"Error reading file: {e}")
+            fedex_df = None
+
+        if fedex_df is not None:
+            process_fedex(fedex_df)
+
+
+# ===== UPS Upload Tab =====
 with tab2:
-    st.header("📦 UPS Invoice Upload")
+    st.header("📦 Upload UPS CSV or XLSX")
     ups_file = st.file_uploader("Upload UPS File", type=["csv", "xlsx"], key="ups")
 
     if ups_file:
-        process_ups(ups_file)
+        try:
+            if ups_file.name.endswith(".csv"):
+                ups_df = pd.read_csv(ups_file)
+            elif ups_file.name.endswith(".xlsx"):
+                ups_df = pd.read_excel(ups_file, engine="openpyxl")
+            else:
+                st.error("Unsupported file type.")
+                ups_df = None
+        except Exception as e:
+            st.error(f"Error reading file: {e}")
+            ups_df = None
+
+        if ups_df is not None:
+            process_ups(ups_df)
