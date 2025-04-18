@@ -1,7 +1,7 @@
 import streamlit as st
 import pandas as pd
 
-st.title("📦 FedEx & UPS Charge Extractor (CSV/XLSX / Grouped View)")
+st.title("📦 FedEx & UPS Charge Extractor (CSV/XLSX)")
 
 tab1, tab2 = st.tabs(["FedEx Upload", "UPS Upload"])
 
