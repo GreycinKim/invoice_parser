@@ -132,6 +132,7 @@ with tab1:
 
 with tab2:
     st.header("📦 UPS Invoice Upload")
-    ups_file = st.file_uploader("Upload UPS CSV", type="csv", key="ups")
+    ups_file = st.file_uploader("Upload UPS File", type=["csv", "xlsx"], key="ups")
+
     if ups_file:
         process_ups(ups_file)
